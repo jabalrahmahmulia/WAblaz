@@ -17,11 +17,12 @@ const Auth = {
         this.currentUser = data.user;
         localStorage.setItem('wasender_token', data.token);
         localStorage.setItem('wasender_user', JSON.stringify(data.user));
-        return true;
+        return { success: true, user: data.user };
       }
-      throw new Error(data.message || 'Login gagal');
+      return { success: false, message: data.message || data.error || 'Login gagal' };
     } catch (error) {
-      throw error;
+      console.error('Login error:', error);
+      return { success: false, message: 'Gagal terhubung ke server' };
     }
   },
 
