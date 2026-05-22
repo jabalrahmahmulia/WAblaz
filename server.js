@@ -1,8 +1,8 @@
 /**
  * ============================================================
- * WAsender - Server Backend (Express.js)
+ * WA-Blazz - Server Backend (Express.js)
  * ============================================================
- * Server utama untuk aplikasi WAsender WhatsApp Blast.
+ * Server utama untuk aplikasi WA-Blazz WhatsApp Blast.
  * Menangani autentikasi, enkripsi, proxy API, dan penjadwalan.
  * 
  * Teknologi: Express.js, Node.js 18+ (native fetch & crypto)
@@ -83,12 +83,20 @@ app.use(session({
   secret: SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  rolling: true, // Refresh cookie exp setiap ada request
   cookie: {
     secure: false, // Set true jika menggunakan HTTPS
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // Session berlaku 24 jam
+    maxAge: 5 * 60 * 60 * 1000 // Session berlaku 5 jam
   }
 }));
+
+// Peta untuk menyimpan sesi aktif per user
+const activeSessions = new Map();
+
+// Variabel untuk Global Blast Lock
+let lastSendTime = 0;
+let currentSender = null;
 
 // ============================================================
 // Fungsi Enkripsi & Dekripsi (AES-256-CBC)
@@ -335,19 +343,33 @@ app.post('/auth/login', async (req, res) => {
       }
     }
     
-    // Simpan data user di session (tanpa password)
+    // Periksa apakah username ini sudah login di tempat lain (Active Session tracking)
+    if (activeSessions.has(username)) {
+      const existingSessionId = activeSessions.get(username);
+      // Jika session yang tercatat masih valid di store, tolak login baru
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Akun ini sedang login di perangkat lain' 
+      });
+    }
+
+    // Set session
     req.session.user = {
-      namaPengguna: user.namaPengguna || user.username,
       username: user.username,
+      namaPengguna: user.namaPengguna || user.username,
       role: user.role
     };
+
+    // Simpan sessionId
+    activeSessions.set(username, req.sessionID);
     
-    console.log(`✅ Login berhasil: ${username} (${user.role})`);
+    console.log(`🔑 Login sukses: ${username} (${user.role})`);
     
     return res.json({
       success: true,
       user: {
         username: user.username,
+        namaPengguna: user.namaPengguna || user.username,
         role: user.role
       }
     });
@@ -365,6 +387,10 @@ app.post('/auth/login', async (req, res) => {
 app.post('/auth/logout', (req, res) => {
   const username = req.session?.user?.username || 'Unknown';
   
+  if (req.session?.user?.username) {
+    activeSessions.delete(req.session.user.username);
+  }
+
   req.session.destroy((err) => {
     if (err) {
       console.error('❌ Error saat logout:', err.message);
@@ -423,6 +449,17 @@ app.post('/api/send', requireAuth, async (req, res) => {
   try {
     const { to, body, messageType, file, delay, schedule } = req.body;
     
+    // Global Sending Lock: Cegah user lain kirim pesan jika sedang ada yang ngeblast (15 detik)
+    const now = Date.now();
+    const isSending = (now - lastSendTime) < 15000;
+    if (isSending && currentSender !== req.session.user.username) {
+      return res.status(429).json({ success: false, error: `Sistem sedang memproses kiriman dari user: ${currentSender}` });
+    }
+    
+    // Set lock untuk user ini
+    currentSender = req.session.user.username;
+    lastSendTime = now;
+
     // Validasi input minimal
     if (!to) {
       return res.status(400).json({ success: false, error: 'Nomor tujuan (to) diperlukan' });
@@ -450,27 +487,57 @@ app.post('/api/send', requireAuth, async (req, res) => {
       });
     }
     
-    // Siapkan payload untuk StarSender API
-    const payload = {
-      messageType: messageType || 'text',
-      to: to,
-      body: body || ''
-    };
+    let apiResponse;
     
-    // Tambahkan file jika ada (untuk pesan media)
     if (file) {
-      payload.file = file;
+      // Jika ada lampiran file, StarSender umumnya menggunakan /api/sendFiles dengan multipart/form-data
+      // Kita perlu membaca file lokal dan mengirimkannya sebagai form-data
+      const fileApiUrl = apiUrl.replace('/api/send', '/api/sendFiles');
+      const filename = file.split('/').pop();
+      const filePath = path.join(__dirname, 'public', 'uploads', filename);
+      
+      const formData = new FormData();
+      formData.append('tujuan', to);
+      formData.append('message', body || '');
+      
+      try {
+        const fileBuffer = fs.readFileSync(filePath);
+        // Konversi buffer ke Blob (dibutuhkan oleh native fetch FormData)
+        const blob = new Blob([fileBuffer]);
+        formData.append('file', blob, filename);
+      } catch (err) {
+        console.error('❌ File lokal tidak ditemukan:', err.message);
+        return res.status(400).json({ success: false, error: 'File lampiran tidak ditemukan di server lokal' });
+      }
+
+      apiResponse = await fetch(fileApiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': apiKey,
+          'Connection': 'close'
+        },
+        body: formData,
+        signal: AbortSignal.timeout(30000)
+      });
+    } else {
+      // Siapkan payload untuk pengiriman teks biasa
+      const payload = {
+        messageType: messageType || 'text',
+        to: to,
+        body: body || ''
+      };
+      
+      apiResponse = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': apiKey,
+          'Connection': 'close'
+        },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000)
+      });
     }
-    
-    // Kirim request ke StarSender API
-    const apiResponse = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': apiKey
-      },
-      body: JSON.stringify(payload)
-    });
     
     const apiResult = await apiResponse.json();
     
@@ -508,6 +575,104 @@ app.post('/api/send', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('❌ Error saat mengirim pesan:', error.message);
     return res.status(500).json({ success: false, error: 'Gagal mengirim pesan: ' + error.message });
+  }
+});
+
+/**
+ * GET /api/status
+ * Cek status apakah server sedang sibuk blast.
+ */
+app.get('/api/status', requireAuth, (req, res) => {
+  const isSending = (Date.now() - lastSendTime) < 15000;
+  return res.json({
+    success: true,
+    isBlasting: isSending,
+    currentSender: isSending ? currentSender : null
+  });
+});
+
+/**
+ * GET /api/check-api
+ * Cek status koneksi ke StarSender API
+ */
+app.get('/api/check-api', requireAuth, async (req, res) => {
+  try {
+    const settings = await getCachedSettings();
+    if (!settings || !settings.apiUrl || !settings.apiKey) {
+      return res.json({ success: true, active: false, message: 'Belum dikonfigurasi' });
+    }
+    
+    let apiUrl, apiKey;
+    try {
+      apiUrl = decrypt(settings.apiUrl);
+      apiKey = decrypt(settings.apiKey);
+    } catch {
+      return res.json({ success: true, active: false, message: 'Dekripsi Gagal' });
+    }
+    
+    // Test koneksi ke API
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({}),
+      signal: AbortSignal.timeout(5000)
+    });
+    
+    if (response.status === 401 || response.status === 403) {
+      return res.json({ success: true, active: false, message: 'API Key Tidak Valid' });
+    }
+    
+    return res.json({ success: true, active: true, message: 'API Aktif' });
+  } catch (err) {
+    return res.json({ success: true, active: false, message: 'Koneksi Gagal' });
+  }
+});
+
+/**
+ * GET /api/files
+ * Mendapatkan daftar file di folder uploads
+ */
+app.get('/api/files', requireAuth, (req, res) => {
+  try {
+    const files = fs.readdirSync(uploadDir).map(filename => {
+      const stats = fs.statSync(path.join(uploadDir, filename));
+      return {
+        filename,
+        size: stats.size,
+        createdAt: stats.birthtime
+      };
+    });
+    // Urutkan dari yang terbaru
+    files.sort((a, b) => b.createdAt - a.createdAt);
+    return res.json({ success: true, data: files });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Gagal mengambil daftar file: ' + error.message });
+  }
+});
+
+/**
+ * DELETE /api/files/:filename
+ * Menghapus file di folder uploads
+ */
+app.delete('/api/files/:filename', requireAuth, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    // Basic security check to prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      return res.status(400).json({ success: false, error: 'Nama file tidak valid' });
+    }
+    const filepath = path.join(uploadDir, filename);
+    if (fs.existsSync(filepath)) {
+      fs.unlinkSync(filepath);
+      return res.json({ success: true });
+    } else {
+      return res.status(404).json({ success: false, error: 'File tidak ditemukan' });
+    }
+  } catch (error) {
+    return res.status(500).json({ success: false, error: 'Gagal menghapus file: ' + error.message });
   }
 });
 
@@ -949,228 +1114,27 @@ async function initializeSettings() {
 }
 
 // ============================================================
-// Schedule Checker: Pemeriksa Jadwal Otomatis
+// Inisialisasi Server
 // ============================================================
 
-/**
- * Fungsi utilitas untuk delay (pause) dalam milidetik.
- * @param {number} ms - Durasi delay dalam milidetik
- * @returns {Promise} Promise yang resolve setelah delay
- */
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-/**
- * Menghasilkan delay acak antara min dan max detik.
- * @param {number} minSec - Delay minimum dalam detik
- * @param {number} maxSec - Delay maksimum dalam detik
- * @returns {number} Delay acak dalam milidetik
- */
-function randomDelay(minSec, maxSec) {
-  const min = Math.max(1, parseInt(minSec) || 1);
-  const max = Math.max(min, parseInt(maxSec) || 3);
-  return (Math.floor(Math.random() * (max - min + 1)) + min) * 1000;
-}
-
-/**
- * Memproses jadwal pengiriman yang sudah waktunya.
- * Dijalankan setiap 30 detik oleh setInterval.
- * 
- * Alur kerja:
- * 1. Ambil semua jadwal dari database
- * 2. Filter jadwal yang pending dan waktunya sudah tiba
- * 3. Update status menjadi 'processing'
- * 4. Kirim pesan ke semua target dengan delay antar pesan
- * 5. Update status menjadi 'completed' atau 'failed'
- */
-async function checkSchedules() {
-  // Lewati jika Google Script URL belum dikonfigurasi
-  if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === 'your-google-apps-script-web-app-url') return;
-  
-  try {
-    const result = await callGoogleScript('getSchedules');
-    
-    if (!result.success || !result.data) return;
-    
-    const now = new Date();
-    
-    // Filter jadwal yang pending dan waktunya sudah tiba
-    const pendingSchedules = result.data.filter(schedule => {
-      if (schedule.status !== 'pending') return false;
-      const scheduledTime = new Date(schedule.scheduledAt);
-      return scheduledTime <= now;
-    });
-    
-    // Proses setiap jadwal yang memenuhi syarat
-    for (const schedule of pendingSchedules) {
-      console.log(`⏰ Memproses jadwal: ${schedule.id}`);
-      
-      // Update status menjadi 'processing'
-      await callGoogleScript('updateScheduleStatus', {
-        id: schedule.id,
-        status: 'processing'
-      });
-      
-      try {
-        // Parse daftar target (bisa berupa JSON string atau string biasa)
-        let targets = [];
-        try {
-          targets = JSON.parse(schedule.targets);
-        } catch {
-          // Jika bukan JSON, anggap sebagai daftar yang dipisahkan koma
-          targets = schedule.targets.split(',').map(t => t.trim()).filter(Boolean);
-        }
-        
-        if (!Array.isArray(targets)) targets = [targets];
-        
-        // Ambil pengaturan API
-        const settings = await getCachedSettings();
-        let apiUrl, apiKey;
-        
-        try {
-          apiUrl = decrypt(settings.apiUrl);
-          apiKey = decrypt(settings.apiKey);
-        } catch {
-          throw new Error('Gagal mendekripsi pengaturan API');
-        }
-        
-        // Konfigurasi delay dari jadwal
-        const delayMin = parseInt(schedule.delayMin) || 1;
-        const delayMax = parseInt(schedule.delayMax) || 3;
-        const breakAfter = parseInt(schedule.breakAfter) || 10;
-        const breakDelayMin = parseInt(schedule.breakDelayMin) || 30;
-        const breakDelayMax = parseInt(schedule.breakDelayMax) || 60;
-        
-        let successCount = 0;
-        let failCount = 0;
-        
-        // Kirim pesan ke setiap target
-        for (let i = 0; i < targets.length; i++) {
-          const target = targets[i];
-          
-          try {
-            // Siapkan payload
-            const payload = {
-              messageType: schedule.fileUrl ? 'image' : 'text',
-              to: target,
-              body: schedule.message || ''
-            };
-            
-            if (schedule.fileUrl) {
-              payload.file = schedule.fileUrl;
-            }
-            
-            // Kirim request ke StarSender API
-            const apiResponse = await fetch(apiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': apiKey
-              },
-              body: JSON.stringify(payload)
-            });
-            
-            const apiResult = await apiResponse.json();
-            
-            // Catat log pengiriman
-            await callGoogleScript('addLog', {
-              to: target,
-              message: (schedule.message || '').substring(0, 200),
-              status: apiResponse.ok ? 'success' : 'failed',
-              response: JSON.stringify(apiResult).substring(0, 500),
-              sentBy: schedule.createdBy || 'scheduler'
-            });
-            
-            if (apiResponse.ok) {
-              successCount++;
-            } else {
-              failCount++;
-            }
-            
-          } catch (sendError) {
-            console.error(`❌ Gagal kirim ke ${target}:`, sendError.message);
-            failCount++;
-            
-            // Log error
-            await callGoogleScript('addLog', {
-              to: target,
-              message: (schedule.message || '').substring(0, 200),
-              status: 'failed',
-              response: sendError.message,
-              sentBy: schedule.createdBy || 'scheduler'
-            });
-          }
-          
-          // Delay antar pesan untuk menghindari blocking
-          if (i < targets.length - 1) {
-            // Jeda istirahat setelah sejumlah pesan tertentu
-            if ((i + 1) % breakAfter === 0) {
-              const breakDelay = randomDelay(breakDelayMin, breakDelayMax);
-              console.log(`☕ Istirahat ${Math.round(breakDelay / 1000)} detik setelah ${i + 1} pesan...`);
-              await sleep(breakDelay);
-            } else {
-              // Delay normal antar pesan
-              const normalDelay = randomDelay(delayMin, delayMax);
-              await sleep(normalDelay);
-            }
-          }
-        }
-        
-        // Update status akhir
-        const finalStatus = failCount === 0 ? 'completed' : (successCount === 0 ? 'failed' : 'partial');
-        await callGoogleScript('updateScheduleStatus', {
-          id: schedule.id,
-          status: finalStatus
-        });
-        
-        console.log(`✅ Jadwal ${schedule.id} selesai: ${successCount} berhasil, ${failCount} gagal (status: ${finalStatus})`);
-        
-      } catch (processError) {
-        console.error(`❌ Gagal memproses jadwal ${schedule.id}:`, processError.message);
-        
-        // Update status menjadi failed
-        await callGoogleScript('updateScheduleStatus', {
-          id: schedule.id,
-          status: 'failed'
-        });
-      }
-    }
-    
-  } catch (error) {
-    // Jangan log error jika Google Script URL belum dikonfigurasi
-    if (GOOGLE_SCRIPT_URL) {
-      console.error('⚠️ Error pada schedule checker:', error.message);
-    }
-  }
-}
-
-// ============================================================
-// Jalankan Server
-// ============================================================
-
-app.listen(PORT, () => {
+// Mulai HTTP server
+app.listen(PORT, async () => {
   console.log('');
   console.log('╔══════════════════════════════════════════════╗');
   console.log('║                                              ║');
-  console.log('║     🚀 WAsender Server Berjalan!             ║');
+  console.log('║     🚀 WA-Blazz Server Berjalan!             ║');
   console.log('║                                              ║');
-  console.log(`║     📡 Port    : ${PORT}                          ║`);
-  console.log(`║     🌐 URL     : http://localhost:${PORT}         ║`);
+  console.log(`║     📡 Port    : ${PORT.toString().padEnd(28)} ║`);
+  console.log(`║     🌐 URL     : http://localhost:${PORT.toString().padEnd(13)} ║`);
   console.log('║     📁 Static  : ./public                    ║');
   console.log('║                                              ║');
   console.log('╚══════════════════════════════════════════════╝');
   console.log('');
   
-  // Inisialisasi pengaturan default saat server dimulai
   if (GOOGLE_SCRIPT_URL) {
     initializeSettings();
   } else {
     console.log('⚠️  GOOGLE_SCRIPT_URL belum dikonfigurasi.');
     console.log('   Silakan atur di file .env untuk menghubungkan ke database.');
   }
-  
-  // Jalankan schedule checker setiap 30 detik
-  setInterval(checkSchedules, 30 * 1000);
-  console.log('⏰ Schedule checker aktif (interval: 30 detik)');
 });

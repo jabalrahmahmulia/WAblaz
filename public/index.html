@@ -3,11 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WAsender - WhatsApp Blast Sender</title>
+  <title>WA-Blazz - WhatsApp Blast Sender</title>
   <meta name="description" content="Aplikasi pengirim pesan WhatsApp massal profesional">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="/css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
 </head>
@@ -22,7 +23,7 @@
             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366"/>
             <path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c-.001 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.58 0 11.94-5.335 11.943-11.893.002-3.178-1.234-6.165-3.473-8.413zM12.045 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885z" fill="#25D366"/>
           </svg>
-          <h1>WAsender</h1>
+          <h1>WA-Blazz</h1>
           <p class="login-subtitle">WhatsApp Blast Sender</p>
         </div>
         <form id="login-form" autocomplete="off">
@@ -51,7 +52,7 @@
           </button>
         </form>
         <div class="login-footer">
-          <p>WAsender v1.0 &mdash; Powered by StarSender API</p>
+          <p>WA-Blazz v3.0 &mdash; Powered by StarSender API</p>
         </div>
       </div>
     </div>
@@ -67,17 +68,13 @@
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366"/>
           <path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c-.001 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.58 0 11.94-5.335 11.943-11.893.002-3.178-1.234-6.165-3.473-8.413zM12.045 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885z" fill="#25D366"/>
         </svg>
-        <span>WAsender</span>
+        <span>WA-Blazz</span>
       </div>
 
       <nav class="sidebar-nav">
         <a href="#blast" class="nav-item active" data-page="blast">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
           <span>Kirim Pesan</span>
-        </a>
-        <a href="#scheduler" class="nav-item" data-page="scheduler">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2"/></svg>
-          <span>Jadwal Pengiriman</span>
         </a>
         <a href="#logs" class="nav-item" data-page="logs">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
@@ -122,6 +119,10 @@
         <div>
           <h2 id="page-title">Kirim Pesan</h2>
           <span class="breadcrumb" id="breadcrumb">Dashboard &rsaquo; Kirim Pesan</span>
+        </div>
+        <div class="api-status-badge" title="Status Koneksi API">
+          <span class="status-dot" id="api-status-dot"></span>
+          <span class="status-text" id="api-status-text">Memeriksa API...</span>
         </div>
       </div>
 
@@ -208,25 +209,7 @@
                 </div>
               </div>
 
-              <!-- Jadwal Pengiriman -->
-              <div class="card">
-                <div class="card-header">
-                  <h3>Jadwal Pengiriman</h3>
-                </div>
-                <div class="card-body">
-                  <label class="checkbox-wrapper">
-                    <input type="checkbox" id="enable-schedule">
-                    <span class="checkbox-custom"></span>
-                    <span>Jadwalkan Pengiriman</span>
-                  </label>
-                  <div id="schedule-input-wrapper" style="display:none;margin-top:12px;">
-                    <div class="form-group">
-                      <label for="schedule-datetime">Tanggal & Waktu Pengiriman</label>
-                      <input type="datetime-local" id="schedule-datetime">
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <!-- Jadwal dihapus -->
 
               <!-- Tombol Kirim -->
               <button class="btn btn-primary btn-send" id="btn-send">
@@ -270,42 +253,6 @@
                 </div>
               </div>
               <div class="progress-log" id="progress-log"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ========== HALAMAN JADWAL ========== -->
-        <section id="page-scheduler" class="page-section" style="display:none;">
-          <div class="card">
-            <div class="card-header">
-              <h3>Daftar Jadwal Pengiriman</h3>
-              <button class="btn btn-secondary btn-small" id="btn-refresh-schedules">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Refresh
-              </button>
-            </div>
-            <div class="card-body">
-              <div class="table-wrapper">
-                <table class="data-table" id="schedule-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Target</th>
-                      <th>Pesan</th>
-                      <th>Jadwal</th>
-                      <th>Status</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="schedule-tbody">
-                  </tbody>
-                </table>
-              </div>
-              <div class="empty-state" id="schedule-empty">
-                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <h4>Belum Ada Jadwal</h4>
-                <p>Buat jadwal pengiriman baru dari halaman Kirim Pesan</p>
-              </div>
             </div>
           </div>
         </section>
@@ -422,6 +369,37 @@
               </div>
             </div>
           </div>
+
+          <div class="card" style="margin-top:24px;">
+            <div class="card-header">
+              <h3>Kelola File Media</h3>
+              <button class="btn btn-secondary btn-small" id="btn-refresh-files">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                Refresh
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-wrapper">
+                <table class="data-table" id="files-table">
+                  <thead>
+                    <tr>
+                      <th>Nama File</th>
+                      <th>Ukuran</th>
+                      <th>Tanggal Upload</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="files-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="files-empty" style="display:none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                <h4>Tidak Ada File</h4>
+                <p>Belum ada file media yang diunggah.</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- ========== HALAMAN KELOLA PENGGUNA ========== -->
@@ -518,7 +496,7 @@
           </div>
           <div class="form-group" id="new-expires-custom-group" style="display:none;">
             <label for="new-expires-date">Tanggal Berakhir</label>
-            <input type="date" id="new-expires-date">
+            <input type="text" id="new-expires-date" placeholder="Pilih tanggal" readonly>
           </div>
         </form>
       </div>
@@ -567,7 +545,7 @@
           </div>
           <div class="form-group" id="edit-expires-custom-group" style="display:none;">
             <label for="edit-expires-date">Tanggal Berakhir</label>
-            <input type="date" id="edit-expires-date">
+            <input type="text" id="edit-expires-date" placeholder="Pilih tanggal" readonly>
           </div>
         </form>
       </div>
@@ -582,11 +560,11 @@
   <div id="toast-container"></div>
 
   <!-- ==================== SCRIPTS ==================== -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="/js/ui.js"></script>
   <script src="/js/auth.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/sender.js"></script>
-  <script src="/js/scheduler.js"></script>
   <script src="/js/app.js"></script>
 
 </body>

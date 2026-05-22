@@ -23,6 +23,65 @@ const App = {
 
     // Setup routing berbasis hash
     this.setupRouting();
+
+    // Mulai polling status
+    setInterval(() => this.pollStatus(), 5000);
+    setInterval(() => this.checkApiStatus(), 15000);
+    this.checkApiStatus(); // Panggil sekali saat awal
+  },
+
+  /**
+   * Cek koneksi ke StarSender API
+   */
+  async checkApiStatus() {
+    if (!Auth.isLoggedIn()) return;
+    try {
+      const res = await API.checkApi();
+      const dot = document.getElementById('api-status-dot');
+      const text = document.getElementById('api-status-text');
+      
+      if (!dot || !text) return;
+      
+      if (res.active) {
+        dot.className = 'status-dot active';
+        text.textContent = 'API Aktif';
+      } else {
+        dot.className = 'status-dot inactive';
+        text.textContent = res.message || 'API Tidak Aktif';
+      }
+    } catch (e) {
+      const dot = document.getElementById('api-status-dot');
+      const text = document.getElementById('api-status-text');
+      if (dot && text) {
+        dot.className = 'status-dot inactive';
+        text.textContent = 'Koneksi Terputus';
+      }
+    }
+  },
+
+  /**
+   * Polling status server untuk Global Blast Lock
+   */
+  async pollStatus() {
+    if (!Auth.isLoggedIn()) return;
+    try {
+      const res = await API.getStatus();
+      const btn = document.getElementById('btn-send');
+      if (!btn) return;
+      
+      if (res.success && res.isBlasting && res.currentSender !== Auth.getUser().username) {
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Sistem Sedang Dipakai (${res.currentSender})</span>`;
+      } else {
+        btn.disabled = false;
+        // Hanya ganti innerHTML jika isinya memang sebelumnya disabled, biar icon gak kedip2
+        if (btn.innerHTML.includes('Sistem Sedang Dipakai')) {
+          btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg><span>Kirim Pesan</span>`;
+        }
+      }
+    } catch (e) {
+      // Abaikan error jaringan untuk polling
+    }
   },
 
   /**
@@ -88,13 +147,14 @@ const App = {
     try {
       switch (page) {
         case 'scheduler':
-          await Scheduler.loadSchedules();
+          // Removed
           break;
         case 'logs':
           await this.loadLogs();
           break;
         case 'settings':
           await this.loadSettings();
+          await this.loadFiles();
           break;
         case 'users':
           await this.loadUsers();
@@ -109,6 +169,13 @@ const App = {
    * Bind semua event listener
    */
   bindEvents() {
+    // Flatpickr inisialisasi
+    if (typeof flatpickr !== 'undefined') {
+      flatpickr("#schedule-datetime", { enableTime: true, dateFormat: "Y-m-d H:i", minDate: "today" });
+      flatpickr("#new-expires-date", { dateFormat: "Y-m-d", minDate: "today" });
+      flatpickr("#edit-expires-date", { dateFormat: "Y-m-d", minDate: "today" });
+    }
+
     // ===== LOGIN =====
     document.getElementById('login-form').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -154,10 +221,8 @@ const App = {
       document.getElementById('char-count').textContent = e.target.value.length + ' karakter';
     });
 
-    // Toggle jadwal pengiriman
-    document.getElementById('enable-schedule').addEventListener('change', (e) => {
-      document.getElementById('schedule-input-wrapper').style.display = e.target.checked ? 'block' : 'none';
-    });
+    // Removed schedule toggle
+
 
     // Tombol kirim
     document.getElementById('btn-send').addEventListener('click', () => this.handleSend());
@@ -173,6 +238,9 @@ const App = {
       const input = document.getElementById('setting-api-key');
       input.type = input.type === 'password' ? 'text' : 'password';
     });
+
+    // ===== KELOLA FILE =====
+    document.getElementById('btn-refresh-files')?.addEventListener('click', () => this.loadFiles());
 
     // ===== USERS PAGE =====
     document.getElementById('new-expires-type')?.addEventListener('change', (e) => {
@@ -213,7 +281,7 @@ const App = {
     document.getElementById('log-status-filter')?.addEventListener('change', () => this.filterLogs());
 
     // ===== SCHEDULER PAGE =====
-    document.getElementById('btn-refresh-schedules')?.addEventListener('click', () => Scheduler.loadSchedules());
+    // Removed
 
     // ===== MODAL CLOSE =====
     document.querySelectorAll('.modal-close').forEach(btn => {
@@ -279,7 +347,6 @@ const App = {
     const message = document.getElementById('message-body').value;
     const messageType = document.getElementById('message-type').value;
     const fileUpload = document.getElementById('file-upload').files[0];
-    const enableSchedule = document.getElementById('enable-schedule').checked;
 
     // Validasi input
     const targets = Sender.parseTargets(targetText);
@@ -305,43 +372,7 @@ const App = {
       }
     }
 
-    // Jika dijadwalkan
-    if (enableSchedule) {
-      const scheduleDate = document.getElementById('schedule-datetime').value;
-      if (!scheduleDate) {
-        UI.showToast('Pilih tanggal dan waktu pengiriman', 'error');
-        return;
-      }
-
-      const scheduledAt = new Date(scheduleDate).getTime();
-      if (scheduledAt <= Date.now()) {
-        UI.showToast('Waktu jadwal harus di masa depan', 'error');
-        return;
-      }
-
-      // Simpan jadwal
-      const scheduleData = {
-        targets: targetText,
-        message: message,
-        fileUrl: fileUrl,
-        messageType: messageType,
-        scheduledAt: new Date(scheduleDate).toISOString(),
-        delayMin: document.getElementById('delay-min').value,
-        delayMax: document.getElementById('delay-max').value,
-        breakAfterMin: document.getElementById('break-after-min').value,
-        breakAfterMax: document.getElementById('break-after-max').value,
-        breakDelayMin: document.getElementById('break-delay-min').value,
-        breakDelayMax: document.getElementById('break-delay-max').value
-      };
-
-      const success = await Scheduler.addSchedule(scheduleData);
-      if (success) {
-        UI.showToast('Pesan dijadwalkan untuk dikirim pada ' + UI.formatDate(scheduleData.scheduledAt), 'success');
-        document.getElementById('enable-schedule').checked = false;
-        document.getElementById('schedule-input-wrapper').style.display = 'none';
-      }
-      return;
-    }
+    // Scheduling removed
 
     // Kirim langsung
     const settings = {
@@ -395,6 +426,72 @@ const App = {
     } catch (err) {
       UI.showToast('Gagal terhubung ke server', 'error');
     }
+  },
+
+  /**
+   * Muat daftar file
+   */
+  async loadFiles() {
+    try {
+      const result = await API.getFiles();
+      if (result.success) {
+        this.renderFiles(result.data || []);
+      }
+    } catch (err) {
+      UI.showToast('Gagal memuat daftar file', 'error');
+    }
+  },
+
+  /**
+   * Render tabel file media
+   */
+  renderFiles(files) {
+    const tbody = document.getElementById('files-tbody');
+    const emptyState = document.getElementById('files-empty');
+    const table = document.getElementById('files-table');
+
+    if (!files || files.length === 0) {
+      if(tbody) tbody.innerHTML = '';
+      if(table) table.style.display = 'none';
+      if(emptyState) emptyState.style.display = 'block';
+      return;
+    }
+
+    if(table) table.style.display = 'table';
+    if(emptyState) emptyState.style.display = 'none';
+
+    if(tbody) {
+      tbody.innerHTML = files.map(f => {
+        const sizeKB = (f.size / 1024).toFixed(2);
+        return `<tr>
+          <td>${UI.escapeHtml(f.filename)}</td>
+          <td>${sizeKB} KB</td>
+          <td>${UI.formatDate(f.createdAt)}</td>
+          <td style="display:flex;gap:4px">
+            <button class="btn btn-danger btn-small" onclick="App.handleDeleteFile('${UI.escapeHtml(f.filename)}')">Hapus</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  },
+
+  /**
+   * Hapus file
+   */
+  handleDeleteFile(filename) {
+    UI.showModal('Hapus File', `Apakah Anda yakin ingin menghapus file <strong>${UI.escapeHtml(filename)}</strong>?`, async () => {
+      try {
+        const res = await API.deleteFile(filename);
+        if (res.success) {
+          UI.showToast('File berhasil dihapus', 'success');
+          this.loadFiles();
+        } else {
+          UI.showToast('Gagal menghapus file: ' + (res.error || res.message), 'error');
+        }
+      } catch (e) {
+        UI.showToast('Terjadi kesalahan saat menghapus file', 'error');
+      }
+    });
   },
 
   /**

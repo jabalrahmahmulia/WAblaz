@@ -39,6 +39,22 @@ const API = {
     }
   },
 
+  // ==================== SYSTEM STATUS ====================
+
+  /**
+   * Cek status koneksi ke StarSender API
+   */
+  async checkApi() {
+    return this.request('/api/check-api');
+  },
+
+  /**
+   * Cek status kesibukan server (Global Lock)
+   */
+  async getStatus() {
+    return this.request('/api/status');
+  },
+
   // ==================== PENGIRIMAN PESAN ====================
 
   /**
@@ -79,6 +95,24 @@ const API = {
     }
     
     return data;
+  },
+
+  // ==================== KELOLA FILE MEDIA ====================
+
+  /**
+   * Mendapatkan daftar file yang diupload (superadmin)
+   */
+  async getFiles() {
+    return this.request('/api/files');
+  },
+
+  /**
+   * Menghapus file (superadmin)
+   */
+  async deleteFile(filename) {
+    return this.request(`/api/files/${encodeURIComponent(filename)}`, {
+      method: 'DELETE'
+    });
   },
 
   // ==================== PENGATURAN ====================
