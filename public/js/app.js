@@ -154,7 +154,6 @@ const App = {
           break;
         case 'settings':
           await this.loadSettings();
-          await this.loadFiles();
           break;
         case 'users':
           await this.loadUsers();
@@ -239,8 +238,7 @@ const App = {
       input.type = input.type === 'password' ? 'text' : 'password';
     });
 
-    // ===== KELOLA FILE =====
-    document.getElementById('btn-refresh-files')?.addEventListener('click', () => this.loadFiles());
+    // ===== KELOLA FILE DIHAPUS =====
 
     // ===== USERS PAGE =====
     document.getElementById('new-expires-type')?.addEventListener('change', (e) => {
@@ -355,29 +353,46 @@ const App = {
       return;
     }
 
-    if (!message.trim()) {
-      UI.showToast('Pesan tidak boleh kosong', 'error');
+    if (!message.trim() && !fileUpload) {
+      UI.showToast('Pesan atau lampiran tidak boleh kosong', 'error');
       return;
     }
     
-    let fileUrl = '';
+    let fileBase64 = '';
+    let fileMimeType = '';
+    let fileName = '';
+    
     if (fileUpload) {
       try {
-        UI.showToast('Mengunggah file...', 'info');
-        const res = await API.uploadFile(fileUpload);
-        fileUrl = res.url;
+        UI.showToast('Membaca lampiran...', 'info');
+        // Convert file to Base64
+        const readBase64 = (file) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => {
+            // result is "data:image/png;base64,iVBORw0KGgo..."
+            const result = reader.result;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = error => reject(error);
+        });
+        
+        fileBase64 = await readBase64(fileUpload);
+        fileMimeType = fileUpload.type;
+        fileName = fileUpload.name;
       } catch (e) {
-        UI.showToast(e.message, 'error');
+        UI.showToast('Gagal memproses file lampiran', 'error');
         return;
       }
     }
 
-    // Scheduling removed
-
     // Kirim langsung
     const settings = {
       messageType,
-      fileUrl,
+      fileBase64,
+      fileMimeType,
+      fileName,
       delayMin: document.getElementById('delay-min').value,
       delayMax: document.getElementById('delay-max').value,
       breakAfterMin: document.getElementById('break-after-min').value,
@@ -429,69 +444,6 @@ const App = {
   },
 
   /**
-   * Muat daftar file
-   */
-  async loadFiles() {
-    try {
-      const result = await API.getFiles();
-      if (result.success) {
-        this.renderFiles(result.data || []);
-      }
-    } catch (err) {
-      UI.showToast('Gagal memuat daftar file', 'error');
-    }
-  },
-
-  /**
-   * Render tabel file media
-   */
-  renderFiles(files) {
-    const tbody = document.getElementById('files-tbody');
-    const emptyState = document.getElementById('files-empty');
-    const table = document.getElementById('files-table');
-
-    if (!files || files.length === 0) {
-      if(tbody) tbody.innerHTML = '';
-      if(table) table.style.display = 'none';
-      if(emptyState) emptyState.style.display = 'block';
-      return;
-    }
-
-    if(table) table.style.display = 'table';
-    if(emptyState) emptyState.style.display = 'none';
-
-    if(tbody) {
-      tbody.innerHTML = files.map(f => {
-        const sizeKB = (f.size / 1024).toFixed(2);
-        return `<tr>
-          <td>${UI.escapeHtml(f.filename)}</td>
-          <td>${sizeKB} KB</td>
-          <td>${UI.formatDate(f.createdAt)}</td>
-          <td style="display:flex;gap:4px">
-            <button class="btn btn-danger btn-small" onclick="App.handleDeleteFile('${UI.escapeHtml(f.filename)}')">Hapus</button>
-          </td>
-        </tr>`;
-      }).join('');
-    }
-  },
-
-  /**
-   * Hapus file
-   */
-  handleDeleteFile(filename) {
-    UI.showModal('Hapus File', `Apakah Anda yakin ingin menghapus file <strong>${UI.escapeHtml(filename)}</strong>?`, async () => {
-      try {
-        const res = await API.deleteFile(filename);
-        if (res.success) {
-          UI.showToast('File berhasil dihapus', 'success');
-          this.loadFiles();
-        } else {
-          UI.showToast('Gagal menghapus file: ' + (res.error || res.message), 'error');
-        }
-      } catch (e) {
-        UI.showToast('Terjadi kesalahan saat menghapus file', 'error');
-      }
-    });
   },
 
   /**

@@ -1,240 +1,104 @@
 /**
- * API.js - Modul komunikasi API
- * Mengelola semua request HTTP ke backend server
+ * ============================================================
+ * Modul Komunikasi API (Serverless GAS Backend)
+ * ============================================================
  */
 const API = {
   /**
-   * Wrapper fetch dengan penanganan error dan autentikasi
+   * Mengirim request ke Google Apps Script
    */
-  async request(url, options = {}) {
+  async request(action, data = {}) {
     try {
-      const defaultOptions = {
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+      const payload = {
+        action: action,
+        sessionToken: localStorage.getItem('wasender_token'),
+        ...data
       };
 
-      const mergedOptions = {
-        ...defaultOptions,
-        ...options,
-        headers: { ...defaultOptions.headers, ...options.headers }
-      };
+      const response = await fetch(window.CONFIG.GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+        },
+        body: JSON.stringify(payload)
+      });
 
-      const res = await fetch(url, mergedOptions);
-
-      // Jika sesi habis (401), arahkan ke login
-      if (res.status === 401) {
-        Auth.currentUser = null;
-        document.getElementById('app-container').style.display = 'none';
-        document.getElementById('page-login').style.display = 'flex';
-        UI.showToast('Sesi telah berakhir, silakan login kembali', 'warning');
-        throw new Error('Sesi berakhir');
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
       }
 
-      const data = await res.json();
-      return data;
-    } catch (err) {
-      if (err.message === 'Sesi berakhir') throw err;
-      console.error(`API Error [${url}]:`, err);
-      throw new Error('Gagal terhubung ke server');
+      const result = await response.json();
+      
+      // Jika token tidak valid / kedaluwarsa
+      if (result.code === 401) {
+        localStorage.removeItem('wasender_token');
+        localStorage.removeItem('wasender_user');
+        window.location.reload();
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`API Request Error (${action}):`, error);
+      throw error;
     }
   },
 
-  // ==================== SYSTEM STATUS ====================
-
-  /**
-   * Cek status koneksi ke StarSender API
-   */
-  async checkApi() {
-    return this.request('/api/check-api');
+  // ==================== AUTHENTICATION ====================
+  async login(username, password) {
+    return this.request('login', { username, password });
   },
-
-  /**
-   * Cek status kesibukan server (Global Lock)
-   */
-  async getStatus() {
-    return this.request('/api/status');
+  
+  async checkSession() {
+    if (!localStorage.getItem('wasender_token')) return { success: false };
+    return this.request('checkSession');
   },
 
   // ==================== PENGIRIMAN PESAN ====================
-
-  /**
-   * Kirim pesan melalui StarSender API
-   */
-  async sendMessage(to, body, messageType = 'text', file = '', delay = 0, schedule = 0) {
-    const payload = { to, body, messageType };
-    if (file) payload.file = file;
-    if (delay) payload.delay = delay;
-    if (schedule) payload.schedule = schedule;
-
-    return this.request('/api/send', {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+  async sendMessage(data) {
+    return this.request('send', data);
   },
 
-  /**
-   * Upload file lampiran
-   */
-  async uploadFile(file) {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    // Panggil fetch langsung karena FormData otomatis men-set Content-Type multipart/form-data
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-    
-    if (res.status === 401) {
-      throw new Error('Sesi berakhir');
-    }
-    
-    const data = await res.json();
-    if (!data.success) {
-      throw new Error(data.error || 'Upload gagal');
-    }
-    
-    return data;
-  },
-
-  // ==================== KELOLA FILE MEDIA ====================
-
-  /**
-   * Mendapatkan daftar file yang diupload (superadmin)
-   */
-  async getFiles() {
-    return this.request('/api/files');
-  },
-
-  /**
-   * Menghapus file (superadmin)
-   */
-  async deleteFile(filename) {
-    return this.request(`/api/files/${encodeURIComponent(filename)}`, {
-      method: 'DELETE'
-    });
-  },
-
-  // ==================== PENGATURAN ====================
-
-  /**
-   * Ambil pengaturan API (superadmin only)
-   */
+  // ==================== PENGATURAN API ====================
   async getSettings() {
-    return this.request('/api/settings');
+    return this.request('getSettings');
+  },
+  
+  async updateSettings(apiUrl, apiKey) {
+    return this.request('updateSettings', { httpRequest: apiUrl, apiKey: apiKey });
   },
 
-  /**
-   * Update pengaturan API (superadmin only)
-   */
-  async updateSettings(httpRequest, apiKey) {
-    return this.request('/api/settings', {
-      method: 'PUT',
-      body: JSON.stringify({ httpRequest, apiKey })
-    });
+  // ==================== SYSTEM STATUS ====================
+  async checkApi() {
+    return this.request('checkApi');
+  },
+  
+  async getStatus() {
+    return this.request('status');
   },
 
-  // ==================== PENGGUNA ====================
-
-  /**
-   * Ambil daftar pengguna (superadmin only)
-   */
+  // ==================== KELOLA PENGGUNA ====================
   async getUsers() {
-    return this.request('/api/users');
+    return this.request('getUsers');
   },
-
-  /**
-   * Tambah pengguna baru (superadmin only)
-   */
-  async addUser(namaPengguna, username, password, role, expiresAt) {
-    return this.request('/api/users', {
-      method: 'POST',
-      body: JSON.stringify({ namaPengguna, username, password, role, expiresAt })
-    });
+  
+  async addUser(data) {
+    return this.request('addUser', data);
   },
-
-  /**
-   * Update pengguna (superadmin only)
-   */
-  async updateUser(currentUsername, data) {
-    return this.request(`/api/users/${encodeURIComponent(currentUsername)}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+  
+  async updateUser(data) {
+    return this.request('updateUser', data);
   },
-
-  /**
-   * Hapus pengguna (superadmin only)
-   */
+  
   async deleteUser(username) {
-    return this.request(`/api/users/${encodeURIComponent(username)}`, {
-      method: 'DELETE'
-    });
+    return this.request('deleteUser', { username });
   },
 
-  // ==================== LOG ====================
-
-  /**
-   * Ambil log pengiriman
-   */
+  // ==================== LOGS ====================
   async getLogs() {
-    return this.request('/api/logs');
+    return this.request('getLogs');
   },
-
-  /**
-   * Tambah entri log
-   */
-  async addLog(logData) {
-    return this.request('/api/logs', {
-      method: 'POST',
-      body: JSON.stringify(logData)
-    });
-  },
-
-  /**
-   * Hapus semua log
-   */
+  
   async clearLogs() {
-    return this.request('/api/logs', {
-      method: 'DELETE'
-    });
-  },
-
-  // ==================== JADWAL ====================
-
-  /**
-   * Ambil daftar jadwal
-   */
-  async getSchedules() {
-    return this.request('/api/schedules');
-  },
-
-  /**
-   * Tambah jadwal baru
-   */
-  async addSchedule(scheduleData) {
-    return this.request('/api/schedules', {
-      method: 'POST',
-      body: JSON.stringify(scheduleData)
-    });
-  },
-
-  /**
-   * Update status jadwal
-   */
-  async updateSchedule(id, data) {
-    return this.request(`/api/schedules/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data)
-    });
-  },
-
-  /**
-   * Hapus jadwal
-   */
-  async deleteSchedule(id) {
-    return this.request(`/api/schedules/${encodeURIComponent(id)}`, {
-      method: 'DELETE'
-    });
+    return this.request('clearLogs');
   }
 };

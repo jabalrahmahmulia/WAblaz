@@ -1,120 +1,82 @@
 /**
- * Auth.js - Modul autentikasi pengguna
- * Mengelola login, logout, dan sesi pengguna
+ * ============================================================
+ * Modul Autentikasi (Serverless)
+ * ============================================================
  */
+
 const Auth = {
   currentUser: null,
 
   /**
-   * Login dengan username dan password
+   * Proses login dan simpan token di localStorage
    */
   async login(username, password) {
     try {
-      const res = await fetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ username, password })
-      });
-      const data = await res.json();
-
+      const data = await API.login(username, password);
       if (data.success) {
         this.currentUser = data.user;
-        this.updateUIForRole();
-        return { success: true, user: data.user };
-      } else {
-        return { success: false, message: data.message || 'Login gagal' };
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      return { success: false, message: 'Gagal terhubung ke server' };
-    }
-  },
-
-  /**
-   * Logout pengguna
-   */
-  async logout() {
-    try {
-      await fetch('/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
-    this.currentUser = null;
-    // Tampilkan halaman login
-    document.getElementById('app-container').style.display = 'none';
-    document.getElementById('page-login').style.display = 'flex';
-  },
-
-  /**
-   * Periksa sesi yang masih aktif
-   */
-  async checkSession() {
-    try {
-      const res = await fetch('/auth/session', {
-        credentials: 'include'
-      });
-      const data = await res.json();
-
-      if (data.loggedIn && data.user) {
-        this.currentUser = data.user;
-        this.updateUIForRole();
+        localStorage.setItem('wasender_token', data.token);
+        localStorage.setItem('wasender_user', JSON.stringify(data.user));
         return true;
       }
-      return false;
-    } catch (err) {
-      console.error('Session check error:', err);
-      return false;
+      throw new Error(data.message || 'Login gagal');
+    } catch (error) {
+      throw error;
     }
   },
 
   /**
-   * Cek apakah pengguna sudah login
+   * Proses logout dengan menghapus token
+   */
+  async logout() {
+    localStorage.removeItem('wasender_token');
+    localStorage.removeItem('wasender_user');
+    this.currentUser = null;
+    return true;
+  },
+
+  /**
+   * Cek apakah user sedang login
    */
   isLoggedIn() {
-    return !!this.currentUser;
+    return !!localStorage.getItem('wasender_token');
   },
 
   /**
-   * Cek apakah pengguna adalah superadmin
-   */
-  isSuperAdmin() {
-    return this.currentUser?.role === 'superadmin';
-  },
-
-  /**
-   * Ambil data pengguna saat ini
+   * Ambil data user yang sedang login
    */
   getUser() {
+    if (!this.currentUser) {
+      const stored = localStorage.getItem('wasender_user');
+      if (stored) {
+        try {
+          this.currentUser = JSON.parse(stored);
+        } catch(e){}
+      }
+    }
     return this.currentUser;
   },
 
   /**
-   * Update tampilan UI berdasarkan role pengguna
+   * Inisialisasi awal (cek validitas token ke server)
    */
-  updateUIForRole() {
-    if (!this.currentUser) return;
-
-    // Update info pengguna di sidebar
-    const avatar = document.getElementById('user-avatar');
-    const name = document.getElementById('user-name');
-    const roleBadge = document.getElementById('user-role-badge');
-
-    if (avatar) avatar.textContent = (this.currentUser.namaPengguna || this.currentUser.username).charAt(0).toUpperCase();
-    if (name) name.textContent = this.currentUser.namaPengguna || this.currentUser.username;
-    if (roleBadge) {
-      roleBadge.textContent = this.currentUser.role === 'superadmin' ? 'Super Admin' : 'Admin';
-      roleBadge.className = this.currentUser.role === 'superadmin'
-        ? 'badge badge-role badge-superadmin'
-        : 'badge badge-role badge-admin';
+  async init() {
+    if (this.isLoggedIn()) {
+      try {
+        const data = await API.checkSession();
+        if (data.success) {
+          this.currentUser = data.user;
+          localStorage.setItem('wasender_user', JSON.stringify(data.user));
+          return true;
+        } else {
+          await this.logout();
+          return false;
+        }
+      } catch (error) {
+        // Jika error koneksi, biarkan saja login sementara
+        return true;
+      }
     }
-
-    // Tampilkan/sembunyikan elemen khusus superadmin
-    document.querySelectorAll('.superadmin-only').forEach(el => {
-      el.style.display = this.isSuperAdmin() ? '' : 'none';
-    });
+    return false;
   }
 };
