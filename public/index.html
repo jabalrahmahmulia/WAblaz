@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WAsender - WhatsApp Blast Sender</title>
+  <meta name="description" content="Aplikasi pengirim pesan WhatsApp massal profesional">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+</head>
+<body>
+
+  <!-- ==================== HALAMAN LOGIN ==================== -->
+  <section id="page-login" class="page-section">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-logo">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366"/>
+            <path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c-.001 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.58 0 11.94-5.335 11.943-11.893.002-3.178-1.234-6.165-3.473-8.413zM12.045 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885z" fill="#25D366"/>
+          </svg>
+          <h1>WAsender</h1>
+          <p class="login-subtitle">WhatsApp Blast Sender</p>
+        </div>
+        <form id="login-form" autocomplete="off">
+          <div class="form-group">
+            <label for="login-username">Nama Pengguna</label>
+            <input type="text" id="login-username" placeholder="Masukkan nama pengguna" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Kata Sandi</label>
+            <div class="password-wrapper">
+              <input type="password" id="login-password" placeholder="Masukkan kata sandi" required autocomplete="current-password">
+              <button type="button" class="password-toggle" id="toggle-password" aria-label="Tampilkan kata sandi">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div id="login-error" class="login-error" style="display:none;"></div>
+          <button type="submit" class="btn btn-primary btn-send" id="btn-login">
+            <span class="btn-text">Masuk</span>
+            <span class="btn-loader" style="display:none;">
+              <span class="spinner"></span>
+            </span>
+          </button>
+        </form>
+        <div class="login-footer">
+          <p>WAsender v1.0 &mdash; Powered by StarSender API</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== APP CONTAINER ==================== -->
+  <div id="app-container" style="display:none;">
+
+    <!-- Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-brand">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" fill="#25D366"/>
+          <path d="M20.52 3.449C18.24 1.245 15.24 0 12.045 0 5.463 0 .104 5.334.101 11.893c-.001 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.58 0 11.94-5.335 11.943-11.893.002-3.178-1.234-6.165-3.473-8.413zM12.045 21.785h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.885-9.885 9.885z" fill="#25D366"/>
+        </svg>
+        <span>WAsender</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#blast" class="nav-item active" data-page="blast">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+          <span>Kirim Pesan</span>
+        </a>
+        <a href="#scheduler" class="nav-item" data-page="scheduler">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><circle cx="12" cy="16" r="2"/></svg>
+          <span>Jadwal Pengiriman</span>
+        </a>
+        <a href="#logs" class="nav-item" data-page="logs">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+          <span>Log Pengiriman</span>
+        </a>
+        <a href="#settings" class="nav-item superadmin-only" data-page="settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Pengaturan</span>
+        </a>
+        <a href="#users" class="nav-item superadmin-only" data-page="users">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+          <span>Kelola Pengguna</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-user">
+          <div class="user-avatar" id="user-avatar">S</div>
+          <div class="user-info">
+            <span class="user-name" id="user-name">User</span>
+            <span class="badge badge-role" id="user-role-badge">admin</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-small" id="btn-logout" style="width:100%;margin-top:12px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Keluar
+        </button>
+      </div>
+    </aside>
+
+    <!-- Sidebar overlay untuk mobile -->
+    <div id="sidebar-overlay" class="sidebar-overlay"></div>
+
+    <!-- Main Content -->
+    <main id="main-content">
+      <!-- Header Bar -->
+      <div class="header-bar">
+        <button class="btn btn-ghost hamburger-toggle" id="hamburger-toggle" aria-label="Toggle menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <h2 id="page-title">Kirim Pesan</h2>
+          <span class="breadcrumb" id="breadcrumb">Dashboard &rsaquo; Kirim Pesan</span>
+        </div>
+      </div>
+
+      <div class="content-area">
+
+        <!-- ========== HALAMAN BLAST ========== -->
+        <section id="page-blast" class="page-section active">
+          <div class="blast-layout">
+            <!-- Kolom Kiri -->
+            <div class="blast-left">
+              <!-- Target Data -->
+              <div class="card">
+                <div class="card-header">
+                  <h3>Target Data</h3>
+                  <span class="badge badge-info" id="target-count">0 nomor</span>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <textarea id="target-numbers" rows="10" placeholder="Masukkan nomor target, satu per baris.&#10;Contoh:&#10;62858xxxxxxxx&#10;62881xxxxxxxx:Nama:Nilai1:Nilai2&#10;&#10;(gunakan kode negara, misal: 62 untuk Indonesia)&#10;&#10;Tip: Copy dari Excel lalu Paste di sini&#10;parsing otomatis dengan simbol : (titik dua)"></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Pesan -->
+              <div class="card">
+                <div class="card-header">
+                  <h3>Pesan</h3>
+                  <span class="text-muted" id="char-count">0 karakter</span>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <textarea id="message-body" rows="6" placeholder="Ketik pesan Anda di sini... {Halo|Hi|Hey} mendukung Spintax&#10;&#10;Parameter yang tersedia:&#10;{P}: Nomor Telepon&#10;{N}: Nama&#10;{V1} {V2} ... {V...}: Nilai Tambahan&#10;{R}: Kode Acak"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="message-type">Tipe Pesan</label>
+                    <select id="message-type">
+                      <option value="text">Teks</option>
+                      <option value="media">Media</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="file-upload">Lampiran (File Media)</label>
+                    <input type="file" id="file-upload" accept=".pdf,.jpg,.jpeg,.png">
+                    <span class="form-hint">Upload file (PDF, JPG, PNG) max 10MB</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kolom Kanan -->
+            <div class="blast-right">
+              <!-- Pengaturan Pengiriman -->
+              <div class="card">
+                <div class="card-header">
+                  <h3>Pengaturan Pengiriman</h3>
+                </div>
+                <div class="card-body">
+                  <div class="delay-row">
+                    <label>Delay Pesan :</label>
+                    <input type="number" id="delay-min" value="3" min="1" max="60">
+                    <span class="delay-separator">-</span>
+                    <input type="number" id="delay-max" value="5" min="1" max="120">
+                    <span class="delay-unit">Detik</span>
+                  </div>
+                  <span class="form-hint">Jeda acak antar pesan untuk menghindari blokir</span>
+
+                  <div class="delay-row">
+                    <label>Istirahat Setelah :</label>
+                    <input type="number" id="break-after-min" value="10" min="1" max="100">
+                    <span class="delay-separator">-</span>
+                    <input type="number" id="break-after-max" value="15" min="1" max="200">
+                    <span class="delay-unit">Pesan</span>
+                  </div>
+                  <span class="form-hint">Jumlah pesan sebelum istirahat panjang</span>
+
+                  <div class="delay-row">
+                    <label>Delay Istirahat :</label>
+                    <input type="number" id="break-delay-min" value="4" min="1" max="300">
+                    <span class="delay-separator">-</span>
+                    <input type="number" id="break-delay-max" value="8" min="1" max="600">
+                    <span class="delay-unit">Detik</span>
+                  </div>
+                  <span class="form-hint">Durasi istirahat panjang dalam detik</span>
+                </div>
+              </div>
+
+              <!-- Jadwal Pengiriman -->
+              <div class="card">
+                <div class="card-header">
+                  <h3>Jadwal Pengiriman</h3>
+                </div>
+                <div class="card-body">
+                  <label class="checkbox-wrapper">
+                    <input type="checkbox" id="enable-schedule">
+                    <span class="checkbox-custom"></span>
+                    <span>Jadwalkan Pengiriman</span>
+                  </label>
+                  <div id="schedule-input-wrapper" style="display:none;margin-top:12px;">
+                    <div class="form-group">
+                      <label for="schedule-datetime">Tanggal & Waktu Pengiriman</label>
+                      <input type="datetime-local" id="schedule-datetime">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tombol Kirim -->
+              <button class="btn btn-primary btn-send" id="btn-send">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                <span>Kirim Pesan</span>
+              </button>
+              <button class="btn btn-danger btn-send" id="btn-stop" style="display:none;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                <span>Hentikan Pengiriman</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Section -->
+          <div id="progress-section" class="card" style="display:none;margin-top:24px;">
+            <div class="card-header">
+              <h3>Progress Pengiriman</h3>
+              <span id="progress-status" class="badge badge-info">Mengirim...</span>
+            </div>
+            <div class="card-body">
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+              </div>
+              <div class="progress-percentage" id="progress-percentage">0%</div>
+              <div class="progress-stats">
+                <div class="stat-item">
+                  <span class="stat-value" id="stat-total">0</span>
+                  <span class="stat-label">Total</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value text-success" id="stat-sent">0</span>
+                  <span class="stat-label">Terkirim</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value text-error" id="stat-failed">0</span>
+                  <span class="stat-label">Gagal</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value text-warning" id="stat-remaining">0</span>
+                  <span class="stat-label">Tersisa</span>
+                </div>
+              </div>
+              <div class="progress-log" id="progress-log"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== HALAMAN JADWAL ========== -->
+        <section id="page-scheduler" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Daftar Jadwal Pengiriman</h3>
+              <button class="btn btn-secondary btn-small" id="btn-refresh-schedules">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                Refresh
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-wrapper">
+                <table class="data-table" id="schedule-table">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Target</th>
+                      <th>Pesan</th>
+                      <th>Jadwal</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="schedule-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="schedule-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <h4>Belum Ada Jadwal</h4>
+                <p>Buat jadwal pengiriman baru dari halaman Kirim Pesan</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== HALAMAN LOG ========== -->
+        <section id="page-logs" class="page-section" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Log Pengiriman</h3>
+              <div class="action-bar">
+                <button class="btn btn-secondary btn-small" id="btn-export-logs">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Export
+                </button>
+                <button class="btn btn-danger btn-small" id="btn-clear-logs">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                  Hapus Semua
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <!-- Filter Bar -->
+              <div class="filter-bar">
+                <input type="text" id="log-search" placeholder="Cari nomor atau pesan...">
+                <select id="log-status-filter">
+                  <option value="all">Semua Status</option>
+                  <option value="success">Berhasil</option>
+                  <option value="failed">Gagal</option>
+                </select>
+                <button class="btn btn-secondary btn-small" id="btn-refresh-logs">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,4 23,10 17,10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                  Refresh
+                </button>
+              </div>
+              <div class="table-wrapper">
+                <table class="data-table" id="logs-table">
+                  <thead>
+                    <tr>
+                      <th>Nomor</th>
+                      <th>Pesan</th>
+                      <th>Status</th>
+                      <th>Waktu</th>
+                      <th>Pengirim</th>
+                    </tr>
+                  </thead>
+                  <tbody id="logs-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="logs-empty">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
+                <h4>Belum Ada Log</h4>
+                <p>Log pengiriman akan muncul setelah Anda mengirim pesan</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== HALAMAN PENGATURAN ========== -->
+        <section id="page-settings" class="page-section superadmin-only" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Konfigurasi API</h3>
+              <span class="encryption-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                Terenkripsi AES-256
+              </span>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label for="setting-api-url">HTTP Request URL</label>
+                <input type="text" id="setting-api-url" placeholder="https://api.starsender.online/api/send">
+              </div>
+              <div class="form-group">
+                <label for="setting-api-key">API Key</label>
+                <div class="password-wrapper">
+                  <input type="password" id="setting-api-key" placeholder="Masukkan API Key">
+                  <button type="button" class="password-toggle" id="toggle-api-key" aria-label="Tampilkan API Key">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <span class="form-hint">API Key akan dienkripsi sebelum disimpan ke database</span>
+              </div>
+              <button class="btn btn-primary" id="btn-save-settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+                Simpan Pengaturan
+              </button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:24px;">
+            <div class="card-header">
+              <h3>Informasi Keamanan</h3>
+            </div>
+            <div class="card-body">
+              <div class="info-row">
+                <span class="info-label">Metode Enkripsi</span>
+                <span class="info-value">AES-256-CBC dengan IV acak</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Penyimpanan</span>
+                <span class="info-value">Google Sheets (terenkripsi)</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Hash Password</span>
+                <span class="info-value">SHA-256</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Proxy API</span>
+                <span class="info-value">Server-side (API key tidak terekspos ke browser)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========== HALAMAN KELOLA PENGGUNA ========== -->
+        <section id="page-users" class="page-section superadmin-only" style="display:none;">
+          <div class="card">
+            <div class="card-header">
+              <h3>Kelola Pengguna</h3>
+              <button class="btn btn-primary btn-small" id="btn-open-add-user">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Tambah Pengguna
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-wrapper">
+                <table class="data-table" id="users-table">
+                  <thead>
+                    <tr>
+                      <th>Nama Pengguna</th>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Masa Aktif</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody">
+                  </tbody>
+                </table>
+              </div>
+              <div class="empty-state" id="users-empty" style="display:none;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                <h4>Belum Ada Pengguna</h4>
+                <p>Tambah pengguna baru dengan tombol di atas</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div><!-- end content-area -->
+    </main>
+  </div><!-- end app-container -->
+
+  <!-- ==================== MODAL: KONFIRMASI ==================== -->
+  <div class="modal-overlay" id="modal-confirm" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modal-confirm-title">Konfirmasi</h3>
+        <button class="btn btn-ghost btn-icon modal-close" data-modal="modal-confirm">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-confirm-message">Apakah Anda yakin?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-confirm-cancel">Batal</button>
+        <button class="btn btn-danger" id="modal-confirm-ok">Ya, Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: TAMBAH PENGGUNA ==================== -->
+  <div class="modal-overlay" id="modal-add-user" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Tambah Pengguna Baru</h3>
+        <button class="btn btn-ghost btn-icon modal-close" data-modal="modal-add-user">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-user">
+          <div class="form-group">
+            <label for="new-nama">Nama Pengguna</label>
+            <input type="text" id="new-nama" placeholder="Masukkan nama tampilan" required>
+          </div>
+          <div class="form-group">
+            <label for="new-username">Username</label>
+            <input type="text" id="new-username" placeholder="Masukkan username" required>
+          </div>
+          <div class="form-group">
+            <label for="new-password">Kata Sandi</label>
+            <input type="password" id="new-password" placeholder="Masukkan kata sandi" required>
+          </div>
+          <div class="form-group">
+            <label for="new-role">Role</label>
+            <select id="new-role" required>
+              <option value="admin">Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="new-expires-type">Masa Aktif</label>
+            <select id="new-expires-type" required>
+              <option value="lifetime">Selamanya (Lifetime)</option>
+              <option value="1month">1 Bulan</option>
+              <option value="custom">Custom Tanggal</option>
+            </select>
+          </div>
+          <div class="form-group" id="new-expires-custom-group" style="display:none;">
+            <label for="new-expires-date">Tanggal Berakhir</label>
+            <input type="date" id="new-expires-date">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close" data-modal="modal-add-user">Batal</button>
+        <button class="btn btn-primary" id="btn-submit-add-user">Tambah Pengguna</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: EDIT PENGGUNA ==================== -->
+  <div class="modal-overlay" id="modal-edit-user" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Pengguna</h3>
+        <button class="btn btn-ghost btn-icon modal-close" data-modal="modal-edit-user">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-edit-user">
+          <input type="hidden" id="edit-current-username">
+          <div class="form-group">
+            <label for="edit-nama">Nama Pengguna</label>
+            <input type="text" id="edit-nama" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-username">Username</label>
+            <input type="text" id="edit-username" required>
+          </div>
+          <div class="form-group">
+            <label for="edit-password">Kata Sandi Baru</label>
+            <input type="password" id="edit-password" placeholder="Kosongkan jika tidak diubah">
+          </div>
+          <div class="form-group">
+            <label for="edit-role">Role</label>
+            <select id="edit-role" required>
+              <option value="admin">Admin</option>
+              <option value="superadmin">Super Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-expires-type">Masa Aktif</label>
+            <select id="edit-expires-type" required>
+              <option value="lifetime">Selamanya (Lifetime)</option>
+              <option value="custom">Pilih Tanggal...</option>
+            </select>
+          </div>
+          <div class="form-group" id="edit-expires-custom-group" style="display:none;">
+            <label for="edit-expires-date">Tanggal Berakhir</label>
+            <input type="date" id="edit-expires-date">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close" data-modal="modal-edit-user">Batal</button>
+        <button class="btn btn-primary" id="btn-submit-edit-user">Simpan Perubahan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST CONTAINER ==================== -->
+  <div id="toast-container"></div>
+
+  <!-- ==================== SCRIPTS ==================== -->
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/sender.js"></script>
+  <script src="/js/scheduler.js"></script>
+  <script src="/js/app.js"></script>
+
+</body>
+</html>
