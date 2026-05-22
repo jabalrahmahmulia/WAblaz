@@ -10,7 +10,7 @@ const App = {
    */
   async init() {
     // Periksa sesi yang masih aktif
-    const isLoggedIn = await Auth.checkSession();
+    const isLoggedIn = await Auth.init();
 
     if (isLoggedIn) {
       this.showApp();
