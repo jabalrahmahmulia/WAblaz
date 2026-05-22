@@ -59,6 +59,14 @@ const Auth = {
   },
 
   /**
+   * Cek apakah user adalah superadmin
+   */
+  isSuperAdmin() {
+    const user = this.getUser();
+    return user && user.role === 'superadmin';
+  },
+
+  /**
    * Inisialisasi awal (cek validitas token ke server)
    */
   async init() {
