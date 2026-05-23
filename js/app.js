@@ -343,7 +343,6 @@ const App = {
   async handleSend() {
     const targetText = document.getElementById('target-numbers').value;
     const message = document.getElementById('message-body').value;
-    const messageType = document.getElementById('message-type').value;
     const fileUpload = document.getElementById('file-upload').files[0];
 
     // Validasi input
@@ -358,19 +357,26 @@ const App = {
       return;
     }
     
+    // Auto-detect tipe pesan
+    const messageType = fileUpload ? 'media' : 'text';
+    
     let fileBase64 = '';
     let fileMimeType = '';
     let fileName = '';
     
     if (fileUpload) {
+      // Validasi ukuran file (maks 5MB)
+      if (fileUpload.size > 5 * 1024 * 1024) {
+        UI.showToast('Ukuran file terlalu besar. Maksimal 5MB.', 'error');
+        return;
+      }
+      
       try {
         UI.showToast('Membaca lampiran...', 'info');
-        // Convert file to Base64
         const readBase64 = (file) => new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.readAsDataURL(file);
           reader.onload = () => {
-            // result is "data:image/png;base64,iVBORw0KGgo..."
             const result = reader.result;
             const base64 = result.split(',')[1];
             resolve(base64);
