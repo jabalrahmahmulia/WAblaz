@@ -534,7 +534,7 @@ const App = {
     }
 
     try {
-      const result = await API.addUser(namaPengguna, username, password, role, expiresAt);
+      const result = await API.addUser({ namaPengguna, username, password, role, expiresAt });
       if (result.success) {
         UI.showToast('Pengguna berhasil ditambahkan', 'success');
         UI.closeModal('modal-add-user');
@@ -634,7 +634,7 @@ const App = {
     }
 
     try {
-      const result = await API.updateUser(currentUsername, data);
+      const result = await API.updateUser({ currentUsername, ...data });
       if (result.success) {
         UI.showToast('Pengguna berhasil diperbarui', 'success');
         UI.closeModal('modal-edit-user');

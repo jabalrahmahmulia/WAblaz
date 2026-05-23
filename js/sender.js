@@ -155,7 +155,9 @@ const Sender = {
     // Konfigurasi delay
     const {
       messageType = 'text',
-      fileUrl = '',
+      fileBase64 = '',
+      fileMimeType = '',
+      fileName = '',
       delayMin = 3,
       delayMax = 5,
       breakAfterMin = 10,
@@ -188,12 +190,20 @@ const Sender = {
 
       try {
         // Kirim pesan via API
-        const result = await API.sendMessage(
-          target.number,
-          processedMessage,
-          messageType,
-          fileUrl
-        );
+        const payload = {
+          to: target.number,
+          body: processedMessage,
+          messageType: messageType
+        };
+
+        // Tambahkan file jika ada
+        if (fileBase64) {
+          payload.fileBase64 = fileBase64;
+          payload.fileMimeType = fileMimeType;
+          payload.fileName = fileName;
+        }
+
+        const result = await API.sendMessage(payload);
 
         if (result.success) {
           this.stats.sent++;
