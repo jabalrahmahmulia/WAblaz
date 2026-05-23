@@ -343,7 +343,7 @@ const App = {
   async handleSend() {
     const targetText = document.getElementById('target-numbers').value;
     const message = document.getElementById('message-body').value;
-    const fileUpload = document.getElementById('file-upload').files[0];
+    const mediaUrl = document.getElementById('media-url').value.trim();
 
     // Validasi input
     const targets = Sender.parseTargets(targetText);
@@ -352,53 +352,14 @@ const App = {
       return;
     }
 
-    if (!message.trim() && !fileUpload) {
-      UI.showToast('Pesan atau lampiran tidak boleh kosong', 'error');
+    if (!message.trim() && !mediaUrl) {
+      UI.showToast('Pesan atau URL media tidak boleh kosong', 'error');
       return;
-    }
-    
-    // Auto-detect tipe pesan
-    const messageType = fileUpload ? 'media' : 'text';
-    
-    let fileBase64 = '';
-    let fileMimeType = '';
-    let fileName = '';
-    
-    if (fileUpload) {
-      // Validasi ukuran file (maks 5MB)
-      if (fileUpload.size > 5 * 1024 * 1024) {
-        UI.showToast('Ukuran file terlalu besar. Maksimal 5MB.', 'error');
-        return;
-      }
-      
-      try {
-        UI.showToast('Membaca lampiran...', 'info');
-        const readBase64 = (file) => new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.readAsDataURL(file);
-          reader.onload = () => {
-            const result = reader.result;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-          };
-          reader.onerror = error => reject(error);
-        });
-        
-        fileBase64 = await readBase64(fileUpload);
-        fileMimeType = fileUpload.type;
-        fileName = fileUpload.name;
-      } catch (e) {
-        UI.showToast('Gagal memproses file lampiran', 'error');
-        return;
-      }
     }
 
     // Kirim langsung
     const settings = {
-      messageType,
-      fileBase64,
-      fileMimeType,
-      fileName,
+      mediaUrl,
       delayMin: document.getElementById('delay-min').value,
       delayMax: document.getElementById('delay-max').value,
       breakAfterMin: document.getElementById('break-after-min').value,
